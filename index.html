@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pomodoro Timer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --pink: #f2b5d4;
+      --purple: #a56eff;
+      --hot-pink: #ff69b4;
+      --hover-pink: #e95aa5;
+      --bg-dark: rgba(14, 7, 46, 0.9);
+      --bg-task: rgba(0, 0, 0, 0.5);
+      --text-dark: #2c234d;
+      --text-light: #ffbde0;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Montserrat', sans-serif;
+    }
+
+    body {
+      background: url('background.png') no-repeat center center fixed;
+      background-size: cover;
+      color: var(--pink);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    h1 {
+      margin-bottom: 30px;
+      font-size: 2rem;
+      color: var(--text-dark);
+      text-shadow: 1px 1px 2px #fff;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: row;
+      gap: 30px;
+      flex-wrap: nowrap;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+      max-width: 1200px;
+      flex-grow: 1;
+    }
+
+    .task-container {
+      background: var(--bg-task);
+      border-radius: 15px;
+      padding: 20px;
+      width: 250px;
+    }
+
+    .task-container input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 10px;
+      margin-bottom: 10px;
+      background-color: #2e2e3a;
+      color: #fff;
+    }
+
+    .task-container ul {
+      list-style: none;
+      padding-left: 0;
+    }
+
+    .task-container li {
+      margin: 10px 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #fff;
+    }
+
+    .task-container li input[type="checkbox"] {
+      transform: scale(1.2);
+      margin: 0;
+    }
+
+    .timer-wrapper {
+      position: relative;
+      width: 250px;
+      height: 250px;
+      margin: 0 auto;
+    }
+
+    .circle-bg, .circle-progress {
+      fill: none;
+      stroke-width: 10;
+    }
+
+    .circle-bg {
+      stroke: var(--pink);
+      opacity: 0.2;
+    }
+
+    .circle-progress {
+      stroke: url(#gradient);
+      stroke-linecap: round;
+      transform: rotate(-90deg);
+      transform-origin: 50% 50%;
+    }
+
+    .timer {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      background: var(--bg-dark);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      box-shadow: 0 0 15px var(--pink);
+    }
+
+    .timer h2 {
+      font-size: 3rem;
+      margin-bottom: 10px;
+      color: var(--pink);
+    }
+
+    .timer p {
+      font-size: 1.1rem;
+      color: var(--text-light);
+    }
+
+    .buttons {
+      margin-top: 20px;
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    button {
+      padding: 10px 20px;
+      background-color: var(--hot-pink);
+      border: none;
+      border-radius: 10px;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background-color: var(--hover-pink);
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        flex-direction: column;
+        align-items: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Pomodoro Method Timer</h1>
+  <div class="container" style="flex: 1;">
+    <div class="task-container">
+      <input id="taskInput" type="text" placeholder="Add a task...">
+      <ul id="taskList"></ul>
+    </div>
+
+    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
+      <div class="timer-wrapper">
+        <svg width="250" height="250">
+          <defs>
+            <linearGradient id="gradient" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="var(--pink)" />
+              <stop offset="100%" stop-color="var(--purple)" />
+            </linearGradient>
+          </defs>
+          <circle class="circle-bg" cx="125" cy="125" r="110"></circle>
+          <circle class="circle-progress" id="progressCircle" cx="125" cy="125" r="110"></circle>
+        </svg>
+        <div class="timer">
+          <h2 id="time">25:00</h2>
+          <p id="status">Work time :)</p>
+        </div>
+      </div>
+      <div class="buttons">
+        <button id="startStopBtn">Start</button>
+        <button id="resetBtn">Reset Timer</button>
+      </div>
+    </div>
+  </div>
+
+  <audio id="beep" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
+
+  <script>
+    const timeDisplay = document.getElementById('time');
+    const statusDisplay = document.getElementById('status');
+    const startStopBtn = document.getElementById('startStopBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const beep = document.getElementById('beep');
+    const circle = document.getElementById('progressCircle');
+
+    const radius = 110;
+    const circumference = 2 * Math.PI * radius;
+    circle.style.strokeDasharray = circumference;
+    circle.style.strokeDashoffset = circumference;
+
+    let isRunning = false;
+    let isWork = true;
+    let timer;
+    let totalTime = 25 * 60;
+    let timeLeft = totalTime;
+
+    const formatTime = (seconds) => {
+      const m = String(Math.floor(seconds / 60)).padStart(2, '0');
+      const s = String(seconds % 60).padStart(2, '0');
+      return `${m}:${s}`;
+    };
+
+    const updateCircle = () => {
+      const progress = (timeLeft / totalTime);
+      const offset = circumference * (1 - progress);
+      circle.style.strokeDashoffset = offset;
+    };
+
+    const updateDisplay = () => {
+      timeDisplay.textContent = formatTime(timeLeft);
+      statusDisplay.textContent = isWork ? 'Work time :)' : 'Break time!';
+      updateCircle();
+    };
+
+    const switchMode = () => {
+      isWork = !isWork;
+      totalTime = isWork ? 25 * 60 : 5 * 60;
+      timeLeft = totalTime;
+      updateDisplay();
+    };
+
+    const startTimer = () => {
+      timer = setInterval(() => {
+        timeLeft--;
+        updateDisplay();
+        if (timeLeft <= 0) {
+          beep.play();
+          switchMode();
+        }
+      }, 1000);
+    };
+
+    const stopTimer = () => clearInterval(timer);
+
+    startStopBtn.addEventListener('click', () => {
+      if (!isRunning) {
+        startTimer();
+        startStopBtn.textContent = 'Stop';
+      } else {
+        stopTimer();
+        startStopBtn.textContent = 'Start';
+      }
+      isRunning = !isRunning;
+    });
+
+    resetBtn.addEventListener('click', () => {
+      stopTimer();
+      isRunning = false;
+      isWork = true;
+      totalTime = 25 * 60;
+      timeLeft = totalTime;
+      updateDisplay();
+      startStopBtn.textContent = 'Start';
+    });
+
+    const taskInput = document.getElementById('taskInput');
+    const taskList = document.getElementById('taskList');
+
+    taskInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && taskInput.value.trim()) {
+        const li = document.createElement('li');
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.style.margin = '0 8px 0 0';
+        li.appendChild(checkbox);
+        const span = document.createElement('span');
+        span.textContent = taskInput.value;
+        li.appendChild(span);
+        taskList.appendChild(li);
+        taskInput.value = '';
+      }
+    });
+
+    updateDisplay();
+  </script>
+</body>
+</html>
